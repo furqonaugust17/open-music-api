@@ -27,4 +27,8 @@ const mapDBToSongModel = ({
   albumId: album_id,
 });
 
+// const mapDBToPlaylistModel = ({
+//   id,
+// });
+
 module.exports = { mapDBToAlbumModel, mapDBToSongModel };
