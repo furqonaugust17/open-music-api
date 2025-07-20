@@ -1,66 +1,66 @@
 class AuthenticationsHandler {
-    constructor(authenticationsService, usersService, tokenManager, validator) {
-        this.authenticationsService = authenticationsService;
-        this.usersService = usersService;
-        this.tokenManager = tokenManager;
-        this.validator = validator;
+  constructor(authenticationsService, usersService, tokenManager, validator) {
+    this.authenticationsService = authenticationsService;
+    this.usersService = usersService;
+    this.tokenManager = tokenManager;
+    this.validator = validator;
 
-        this.postAuthenticationHandler = this.postAuthenticationHandler.bind(this);
-        this.putAuthenticationHandler = this.putAuthenticationHandler.bind(this);
-        this.deleteAuthenticationHandler = this.deleteAuthenticationHandler.bind(this);
-    }
+    this.postAuthenticationHandler = this.postAuthenticationHandler.bind(this);
+    this.putAuthenticationHandler = this.putAuthenticationHandler.bind(this);
+    this.deleteAuthenticationHandler = this.deleteAuthenticationHandler.bind(this);
+  }
 
-    async postAuthenticationHandler(request, h) {
-        this.validator.validatePostAuthenticationPayload(request.payload);
+  async postAuthenticationHandler(request, h) {
+    this.validator.validatePostAuthenticationPayload(request.payload);
 
-        const { username, password } = request.payload;
-        const userId = await this.usersService.verifyUserCredential(username, password);
+    const { username, password } = request.payload;
+    const userId = await this.usersService.verifyUserCredential(username, password);
 
-        const accessToken = this.tokenManager.generateAccessToken({ userId });
-        const refreshToken = this.tokenManager.generateRefreshToken({ userId });
+    const accessToken = this.tokenManager.generateAccessToken({ userId });
+    const refreshToken = this.tokenManager.generateRefreshToken({ userId });
 
-        await this.authenticationsService.addRefreshToken(refreshToken);
+    await this.authenticationsService.addRefreshToken(refreshToken);
 
-        const response = h.response({
-            status: 'success',
-            data: {
-                accessToken,
-                refreshToken
-            }
-        });
+    const response = h.response({
+      status: 'success',
+      data: {
+        accessToken,
+        refreshToken,
+      },
+    });
 
-        response.code(201);
-        return response;
-    }
+    response.code(201);
+    return response;
+  }
 
-    async putAuthenticationHandler(request, h) {
-        this.validator.validatePutAuthenticationPayload(request.payload);
+  async putAuthenticationHandler(request) {
+    this.validator.validatePutAuthenticationPayload(request.payload);
 
-        const { refreshToken } = request.payload;
-        await this.authenticationsService.verifyRefreshToken(refreshToken);
-        const { userId } = this.tokenManager.verifyRefreshToken(refreshToken);
+    const { refreshToken } = request.payload;
+    await this.authenticationsService.verifyRefreshToken(refreshToken);
+    const { userId } = this.tokenManager.verifyRefreshToken(refreshToken);
 
-        const accessToken = this.tokenManager.generateAccessToken({ userId });
-        return {
-            status: 'success',
-            data: {
-                accessToken
-            }
-        };
-    }
+    const accessToken = this.tokenManager.generateAccessToken({ userId });
+    return {
+      status: 'success',
+      data: {
+        accessToken,
+      },
+    };
+  }
 
-    async deleteAuthenticationHandler(request, h) {
-        this.validator.validateDeleteAuthenticationPayload(request.payload);
-        const { refreshToken } = request.payload;
+  async deleteAuthenticationHandler(request) {
+    this.validator.validateDeleteAuthenticationPayload(request.payload);
+    const { refreshToken } = request.payload;
 
-        await this.authenticationsService.verifyRefreshToken(refreshToken);
-        await this.authenticationsService.deleteRefreshToken(refreshToken);
+    await this.authenticationsService.verifyRefreshToken(refreshToken);
+    await this.authenticationsService.deleteRefreshToken(refreshToken);
 
-        return {
-            status: 'success',
-            message: 'Refresh token berhasil dihapus'
-        };
-    }
+    return {
+      status: 'success',
+      message: 'Refresh token berhasil dihapus',
+    };
+  }
 }
 
 module.exports = AuthenticationsHandler;

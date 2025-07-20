@@ -18,9 +18,9 @@ exports.up = (pgm) => {
             type: 'VARCHAR(50)',
             notNull: true,
         },
-        owner:{
+        owner: {
             type: 'VARCHAR(50)',
-            notNull: true,
+            notNull: false,
         }
     });
 };

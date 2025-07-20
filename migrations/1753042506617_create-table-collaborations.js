@@ -9,7 +9,7 @@ exports.shorthands = undefined;
  * @returns {Promise<void> | void}
  */
 exports.up = (pgm) => {
-    pgm.createTable('playlistsongs', {
+    pgm.createTable('collaborations', {
         id: {
             type: 'VARCHAR(50)',
             primaryKey: true,
@@ -18,11 +18,13 @@ exports.up = (pgm) => {
             type: 'VARCHAR(50)',
             notNull: true,
         },
-        song_id: {
+        user_id: {
             type: 'VARCHAR(50)',
             notNull: true,
         }
     });
+    pgm.addConstraint('collaborations', 'fk_collaborations.playlist_id.id', 'FOREIGN KEY(playlist_id) REFERENCES playlists(id) ON DELETE CASCADE');
+    pgm.addConstraint('collaborations', 'fk_collaborations.user_id.id', 'FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE');
 };
 
 /**
@@ -31,5 +33,7 @@ exports.up = (pgm) => {
  * @returns {Promise<void> | void}
  */
 exports.down = (pgm) => {
-    pgm.dropTable('playlistsongs');
+    pgm.dropConstraint('collaborations', 'fk_collaborations.playlist_id.id');
+    pgm.dropConstraint('collaborations', 'fk_collaborations.user_id.id');
+    pgm.dropTable('collaborations');
 };
