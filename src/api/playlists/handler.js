@@ -1,9 +1,16 @@
 class PlaylistsHandler {
-  constructor(service, songsService, validatorPlaylists, validatorPlaylistSong) {
+  constructor(
+    service,
+    songsService,
+    playlistActivitiesService,
+    validatorPlaylists,
+    validatorPlaylistSong,
+  ) {
     this.service = service;
     this.validatorPlaylists = validatorPlaylists;
     this.validatorPlaylistSong = validatorPlaylistSong;
     this.songsService = songsService;
+    this.playlistActivitiesService = playlistActivitiesService;
 
     this.postPlaylistHandler = this.postPlaylistHandler.bind(this);
     this.getPlaylistHandler = this.getPlaylistHandler.bind(this);
@@ -11,6 +18,7 @@ class PlaylistsHandler {
     this.postPlaylistSongHandler = this.postPlaylistSongHandler.bind(this);
     this.getPlaylistSongHandler = this.getPlaylistSongHandler.bind(this);
     this.deletePlaylistSongHandler = this.deletePlaylistSongHandler.bind(this);
+    this.getPlaylistActivitiesHandler = this.getPlaylistActivitiesHandler.bind(this);
   }
 
   async postPlaylistHandler(request, h) {
@@ -61,8 +69,15 @@ class PlaylistsHandler {
 
     await this.service.getPlaylistById(playlistId);
     await this.songsService.getSongById(songId);
-    await this.service.verifyPlaylistOwner(playlistId, userId);
+    await this.service.verifyPlaylistAccess(playlistId, userId);
     await this.service.addPlaylistSongs({ playlistId, songId });
+    await this.playlistActivitiesService.addActivity({
+      playlistId,
+      songId,
+      userId,
+      action: 'add',
+    });
+
     const response = h.response({
       status: 'success',
       message: 'Playlist Song berhasil ditambahkan',
@@ -75,7 +90,7 @@ class PlaylistsHandler {
   async getPlaylistSongHandler(request) {
     const { id } = request.params;
     const { userId } = request.auth.credentials;
-    await this.service.verifyPlaylistOwner(id, userId);
+    await this.service.verifyPlaylistAccess(id, userId);
     const playlist = await this.service.getPlaylistById(id);
     const songs = await this.service.getPlaylistSongsById(id);
     Object.assign(playlist, { songs });
@@ -92,11 +107,32 @@ class PlaylistsHandler {
     const { id: playlistId } = request.params;
     const { songId } = request.payload;
     const { userId } = request.auth.credentials;
-    await this.service.verifyPlaylistOwner(playlistId, userId);
+    await this.service.verifyPlaylistAccess(playlistId, userId);
     await this.service.deletePlaylistSongById({ playlistId, songId });
+    await this.playlistActivitiesService.addActivity({
+      playlistId,
+      songId,
+      userId,
+      action: 'delete',
+    });
     return {
       status: 'success',
       message: 'Playlist Song berhasil dihapus',
+    };
+  }
+
+  async getPlaylistActivitiesHandler(request) {
+    const { id: playlistId } = request.params;
+    const { userId } = request.auth.credentials;
+    await this.service.getPlaylistById(playlistId);
+    await this.service.verifyPlaylistAccess(playlistId, userId);
+    const activities = await this.playlistActivitiesService.getActivities({ playlistId });
+    return {
+      status: 'success',
+      data: {
+        playlistId,
+        activities,
+      },
     };
   }
 }
